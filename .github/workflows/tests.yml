@@ -24,6 +24,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v1
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ":memory:"
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -31,11 +34,6 @@ jobs:
           php-version: ${{ matrix.php }}
           extension-csv: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick
           coverage: none
-
-      - name: Set up database configuration
-        env:
-          DB_CONNECTION: sqlite
-          DB_DATABASE: ":memory:"
 
       - name: Install dependencies
         run: |
@@ -133,40 +131,43 @@ jobs:
           composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-suggest
 
       - name: Set up database configuration
-        env:
-          DB_CONNECTION: "5432"
-          DB_HOST: "127.0.0.1"
-          DB_PORT: "3305"
-          DB_DATABASE: "test_db"
-          DB_USERNAME: "postgres"
-          DB_PASSWORD: "password"
-
-        # run: |
-        #   if [ "${{ matrix.database }}" == "mysql" ]; then
-        #     export DB_CONNECTION=mysql
-        #     export DB_HOST=127.0.0.1
-        #     export DB_PORT=3305
-        #     export DB_DATABASE=test_db
-        #     export DB_USERNAME=root
-        #     export DB_PASSWORD=password
-        #   elif [ "${{ matrix.database }}" == "pgsql" ]; then
-        #     export DB_CONNECTION=pgsql
-        #     export DB_HOST=127.0.0.1
-        #     export DB_PORT=5431
-        #     export DB_DATABASE=test_db
-        #     export DB_USERNAME=postgres
-        #     export DB_PASSWORD=password
-        #   elif [ "${{ matrix.database }}" == "sqlsrv" ]; then
-        #     export DB_CONNECTION=sqlsrv
-        #     export DB_HOST=127.0.0.1
-        #     export DB_PORT=1432
-        #     export DB_DATABASE=test_db
-        #     export DB_USERNAME=sa
-        #     export DB_PASSWORD=Password123
-        #   else
-        #     export DB_CONNECTION=sqlite
-        #     export DB_DATABASE=:memory:
-        #   fi
+        # env:
+        #   DB_CONNECTION: "5432"
+        #   DB_HOST: "127.0.0.1"
+        #   DB_PORT: "3305"
+        #   DB_DATABASE: "test_db"
+        #   DB_USERNAME: "postgres"
+        #   DB_PASSWORD: "password"
+  
+# run: |
+#     echo "DB_CONNECTION=sqlite" >> $GITHUB_ENV
+#     echo "DB_DATABASE=:memory:" >> $GITHUB_ENV
+        run: |
+          if [ "${{ matrix.database }}" == "mysql" ]; then
+            echo "DB_CONNECTION=mysql" >> $GITHUB_ENV
+            echo "DB_HOST=127.0.0.1" >> $GITHUB_ENV
+            echo "DB_PORT=3305" >> $GITHUB_ENV
+            echo "DB_DATABASE=test_db" >> $GITHUB_ENV
+            echo "DB_USERNAME=root" >> $GITHUB_ENV
+            echo "DB_PASSWORD=password" >> $GITHUB_ENV
+          elif [ "${{ matrix.database }}" == "pgsql" ]; then
+            echo "DB_CONNECTION=pgsql" >> $GITHUB_ENV
+            echo "DB_HOST=127.0.0.1" >> $GITHUB_ENV
+            echo "DB_PORT=5431" >> $GITHUB_ENV
+            echo "DB_DATABASE=test_db" >> $GITHUB_ENV
+            echo "DB_USERNAME=postgres" >> $GITHUB_ENV
+            echo "DB_PASSWORD=password" >> $GITHUB_ENV
+          elif [ "${{ matrix.database }}" == "sqlsrv" ]; then
+            echo "DB_CONNECTION=sqlsrv" >> $GITHUB_ENV
+            echo "DB_HOST=127.0.0.1" >> $GITHUB_ENV
+            echo "DB_PORT=1432" >> $GITHUB_ENV
+            echo "DB_DATABASE=test_db" >> $GITHUB_ENV
+            echo "DB_USERNAME=sa" >> $GITHUB_ENV
+            echo "DB_PASSWORD=Password123" >> $GITHUB_ENV
+          else
+            echo "DB_CONNECTION=sqlite" >> $GITHUB_ENV
+            echo "DB_DATABASE=:memory:" >> $GITHUB_ENV
+          fi
 
       - name: Execute tests
         run: vendor/bin/phpunit
