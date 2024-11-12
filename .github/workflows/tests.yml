@@ -42,8 +42,8 @@ jobs:
           composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
           composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-suggest
 
-      - name: Clear Laravel configuration cache
-        run: php artisan config:clear
+      # - name: Clear Laravel configuration cache
+      #   run: php artisan config:clear
 
       - name: Execute tests
         run: vendor/bin/phpunit
@@ -67,7 +67,7 @@ jobs:
       #     --health-retries=3
 
       postgres:
-        image: postgres:13
+        image: postgres:17
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
@@ -177,5 +177,5 @@ jobs:
       - name: Execute tests
         run: vendor/bin/phpunit
 
-      - name: Clean up Docker networks
-        run: docker network prune -f
+      # - name: Clean up Docker networks
+      #   run: docker network prune -f
