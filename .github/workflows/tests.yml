@@ -32,15 +32,15 @@ jobs:
           extension-csv: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick
           coverage: none
 
+      - name: Set up database configuration
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ":memory:"
+
       - name: Install dependencies
         run: |
           composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
           composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-suggest
-
-      - name: Set up database configuration
-        run: |
-          export DB_CONNECTION=sqlite
-          export DB_DATABASE=:memory:
 
       - name: Execute tests
         run: vendor/bin/phpunit
@@ -79,19 +79,19 @@ jobs:
           --health-timeout=5s
           --health-retries=3
 
-      mssql:
-        image: mcr.microsoft.com/mssql/server:2019-latest
-        env:
-          SA_PASSWORD: Password123
-          ACCEPT_EULA: Y
-        ports:
-          # - "1432:1433"
-          - 1433
-        options: >-
-          --health-cmd="/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P Password123 -Q 'SELECT 1'"
-          --health-interval=10s
-          --health-timeout=10s
-          --health-retries=4
+      # mssql:
+      #   image: mcr.microsoft.com/mssql/server:2019-latest
+      #   env:
+      #     SA_PASSWORD: Password123
+      #     ACCEPT_EULA: Y
+      #   ports:
+      #     # - "1432:1433"
+      #     - 1433
+      #   options: >-
+      #     --health-cmd="/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P Password123 -Q 'SELECT 1'"
+      #     --health-interval=10s
+      #     --health-timeout=10s
+      #     --health-retries=4
 
     strategy:
       matrix:
@@ -101,8 +101,8 @@ jobs:
         laravel: [11.*]
         dependency-version: [prefer-stable]
         # database: [sqlite, mysql, pgsql, sqlsrv]
-        database: [pgsql, sqlsrv]
-        # database: [pgsql]
+        # database: [pgsql, sqlsrv]
+        database: [pgsql]
         # database: [sqlsrv]
         # exclude:
         #   - php: 8.1
@@ -115,10 +115,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v1
 
-      - name: Install ODBC dependencies
-        run: |
-          sudo apt-get update
-          sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
+      # - name: Install ODBC dependencies
+      #   run: |
+      #     sudo apt-get update
+      #     sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -133,32 +133,40 @@ jobs:
           composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-suggest
 
       - name: Set up database configuration
-        run: |
-          if [ "${{ matrix.database }}" == "mysql" ]; then
-            export DB_CONNECTION=mysql
-            export DB_HOST=127.0.0.1
-            export DB_PORT=3305
-            export DB_DATABASE=test_db
-            export DB_USERNAME=root
-            export DB_PASSWORD=password
-          elif [ "${{ matrix.database }}" == "pgsql" ]; then
-            export DB_CONNECTION=pgsql
-            export DB_HOST=127.0.0.1
-            export DB_PORT=5431
-            export DB_DATABASE=test_db
-            export DB_USERNAME=postgres
-            export DB_PASSWORD=password
-          elif [ "${{ matrix.database }}" == "sqlsrv" ]; then
-            export DB_CONNECTION=sqlsrv
-            export DB_HOST=127.0.0.1
-            export DB_PORT=1432
-            export DB_DATABASE=test_db
-            export DB_USERNAME=sa
-            export DB_PASSWORD=Password123
-          else
-            export DB_CONNECTION=sqlite
-            export DB_DATABASE=:memory:
-          fi
+        env:
+          DB_CONNECTION: "5432"
+          DB_HOST: "127.0.0.1"
+          DB_PORT: "3305"
+          DB_DATABASE: "test_db"
+          DB_USERNAME: "postgres"
+          DB_PASSWORD: "password"
+
+        # run: |
+        #   if [ "${{ matrix.database }}" == "mysql" ]; then
+        #     export DB_CONNECTION=mysql
+        #     export DB_HOST=127.0.0.1
+        #     export DB_PORT=3305
+        #     export DB_DATABASE=test_db
+        #     export DB_USERNAME=root
+        #     export DB_PASSWORD=password
+        #   elif [ "${{ matrix.database }}" == "pgsql" ]; then
+        #     export DB_CONNECTION=pgsql
+        #     export DB_HOST=127.0.0.1
+        #     export DB_PORT=5431
+        #     export DB_DATABASE=test_db
+        #     export DB_USERNAME=postgres
+        #     export DB_PASSWORD=password
+        #   elif [ "${{ matrix.database }}" == "sqlsrv" ]; then
+        #     export DB_CONNECTION=sqlsrv
+        #     export DB_HOST=127.0.0.1
+        #     export DB_PORT=1432
+        #     export DB_DATABASE=test_db
+        #     export DB_USERNAME=sa
+        #     export DB_PASSWORD=Password123
+        #   else
+        #     export DB_CONNECTION=sqlite
+        #     export DB_DATABASE=:memory:
+        #   fi
 
       - name: Execute tests
         run: vendor/bin/phpunit
