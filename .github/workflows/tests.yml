@@ -39,3 +39,124 @@ jobs:
 
       - name: Execute tests
         run: vendor/bin/phpunit
+
+  db-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      # mysql:
+      #   image: mysql:8.0
+      #   env:
+      #     MYSQL_ROOT_PASSWORD: password
+      #     MYSQL_DATABASE: test_db
+      #   ports:
+      #     # - "3305:3306"
+      #     - 3306
+      #   options: >-
+      #     --health-cmd="mysqladmin ping"
+      #     --health-interval=10s
+      #     --health-timeout=5s
+      #     --health-retries=3
+
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: test_db
+        ports:
+          - "5432:5432"
+          # - "5431:5432"
+          # - 5432
+        options: >-
+          --health-cmd="pg_isready"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+      # mssql:
+      #   image: mcr.microsoft.com/mssql/server:2019-latest
+      #   env:
+      #     SA_PASSWORD: Password123
+      #     ACCEPT_EULA: Y
+      #   ports:
+      #     # - "1432:1433"
+      #     - 1433
+      #   options: >-
+      #     --health-cmd="/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P Password123 -Q 'SELECT 1'"
+      #     --health-interval=10s
+      #     --health-timeout=10s
+      #     --health-retries=4
+
+    strategy:
+      matrix:
+        # php: [8.1, 8.2, 8.3]
+        php: [8.3]
+        # laravel: [10.*, 11.*]
+        laravel: [11.*]
+        dependency-version: [prefer-stable]
+        # database: [sqlite, mysql, pgsql, sqlsrv]
+        # database: [pgsql, sqlsrv]
+        database: [pgsql]
+        # database: [sqlsrv]
+        # exclude:
+        #   - php: 8.1
+        #     laravel: 11.*
+        #   - database: sqlsrv  # Exclude SQL Server for unsupported PHP versions if needed
+
+    name: P${{ matrix.php }} - L${{ matrix.laravel }} - D${{ matrix.database }} - ${{ matrix.dependency-version }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v1
+
+      - name: Install ODBC dependencies
+        run: |
+          sudo apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extension-csv: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, pdo_mysql, pdo_pgsql, sqlsrv
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
+          composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-suggest
+
+      - name: Set up database configuration
+        run: |
+          if [ "${{ matrix.database }}" == "mysql" ]; then
+            export DB_CONNECTION=mysql
+            export DB_HOST=127.0.0.1
+            export DB_PORT=3305
+            export DB_DATABASE=test_db
+            export DB_USERNAME=root
+            export DB_PASSWORD=password
+          elif [ "${{ matrix.database }}" == "pgsql" ]; then
+            export DB_CONNECTION=pgsql
+            export DB_HOST=127.0.0.1
+            export DB_PORT=5431
+            export DB_DATABASE=test_db
+            export DB_USERNAME=postgres
+            export DB_PASSWORD=password
+          elif [ "${{ matrix.database }}" == "sqlsrv" ]; then
+            export DB_CONNECTION=sqlsrv
+            export DB_HOST=127.0.0.1
+            export DB_PORT=1432
+            export DB_DATABASE=test_db
+            export DB_USERNAME=sa
+            export DB_PASSWORD=Password123
+          else
+            export DB_CONNECTION=sqlite
+            export DB_DATABASE=:memory:
+          fi
+
+      - name: Execute tests
+        run: vendor/bin/phpunit
+
+      - name: Clean up Docker networks
+        run: docker network prune -f
