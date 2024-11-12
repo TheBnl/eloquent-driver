@@ -13,7 +13,7 @@ abstract class TestCase extends AddonTestCase
 
     protected string $addonServiceProvider = ServiceProvider::class;
 
-    protected $shouldUseStringEntryIds = false;
+    protected $shouldUseStringEntryIds = true;
 
     protected function resolveApplicationConfiguration($app)
     {
